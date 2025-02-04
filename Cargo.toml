@@ -1,0 +1,16 @@
+[package]
+name = "position_health_monitor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-sse = "5.1.0"
+futures = "0.3.31"
+http = "1.1.0"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+move-core-types = { git = "https://github.com/mystenlabs/sui", package = "move-core-types"}
+thiserror = "2.0.3"
+tokio = { version = "1.41.0", features = ["rt-multi-thread", "macros"] }
