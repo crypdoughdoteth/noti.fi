@@ -66,25 +66,19 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // replace hard coded feeds
-    let handle = tokio::spawn(async move {
-        let client = PythClient::new();
-        client
-            .stream_price_feeds(feeds, |event| async move {
-                let json: PythSSE = serde_json::from_str(&event).unwrap();
+    let client = PythClient::new();
+    client
+        .stream_price_feeds(feeds, |event| async move {
+            let json: PythSSE = serde_json::from_str(&event).unwrap();
 
-                json.parsed.iter().for_each(|e| {
-                    let chain = ChainFeedId::from_str(&e.id).unwrap();
-                    let price = e.price.price.parse::<u128>().unwrap();
-                    println!("{:?}{}", chain, price);
-                    LATEST_PRICES.insert(chain, price);
-                });
-            })
-            .await;
-
-        Ok::<(), Errors>(())
-    });
-
-    let _ = handle.await;
+            json.parsed.iter().for_each(|e| {
+                let chain = ChainFeedId::from_str(&e.id).unwrap();
+                let price = e.price.price.parse::<u128>().unwrap();
+                println!("{:?}{}", chain, e.price);
+                LATEST_PRICES.insert(chain, price);
+            });
+        })
+        .await;
 
     Ok(())
 }

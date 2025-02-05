@@ -2,7 +2,8 @@ use async_sse::{decode, Event};
 use futures::prelude::*;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{marker::{Send, Sync}, str::FromStr};
+use std::fmt;
+use std::marker::{Send, Sync};
 use stream::StreamExt;
 
 use crate::errors::Errors;
@@ -43,7 +44,7 @@ impl MultiFeedStream {
 
     pub async fn open_stream<T: Future<Output = ()> + Send + Sync + 'static>(
         self,
-        handler: impl Fn(String) -> T + Send + 'static + Clone + Copy,
+        handler: impl Fn(String) -> T + Send + Clone + Copy + 'static,
     ) {
         let ids = &self.0;
         if ids.is_empty() {
@@ -276,7 +277,6 @@ impl SuiFeedId {
         }
     }
 
-
     pub const fn as_id(&self) -> FeedId {
         match self {
             SuiFeedId::Arb => FeedId(Self::ARB_ID),
@@ -376,4 +376,21 @@ pub struct Price {
     pub conf: String,
     pub expo: i8,
     pub publish_time: i64,
+}
+
+impl fmt::Display for Price {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let price_value = self.price.parse::<u128>().unwrap();
+        let expo_abs = self.expo.unsigned_abs();
+        let divisor = 10u128.pow(expo_abs as u32);
+        let integer_part = price_value / divisor;
+        let fractional_part = price_value % divisor;
+        write!(
+            f,
+            "{}.{:0width$}",
+            integer_part,
+            fractional_part,
+            width = expo_abs as usize
+        )
+    }
 }
