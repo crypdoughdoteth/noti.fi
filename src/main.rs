@@ -1,27 +1,59 @@
-use pyth::types::{ChainFeedId, PythClient, PythSSE, SuiFeedId};
-use sui_sdk::types::base_types::SuiAddress;
-use suilend::{
-    objects::SuilendAccount,
-    types::{Asset, Deposit, Loan, Position},
+use clap::Parser;
+use errors::Errors;
+use pyth::{
+    prices::LATEST_PRICES,
+    types::{ChainFeedId, PythClient, PythSSE, SuiFeedId},
 };
-use tokio::sync::mpsc::channel;
+use sui_sdk::types::base_types::SuiAddress;
+// use suilend::{
+//     objects::SuilendAccount,
+//     types::{Asset, Deposit, Loan, Position},
+// };
 pub mod errors;
 pub mod pyth;
 pub mod suilend;
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+pub struct Cli {
+    #[arg(short, long)]
+    address: SuiAddress,
+}
+
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = PythClient::new();
-    let feed = vec![
-        ChainFeedId::Sui(SuiFeedId::Sui),
-        ChainFeedId::Sui(SuiFeedId::Deep),
-    ];
-    client
-        .stream_price_feeds(feed, |price| async move {
-            let json: PythSSE = serde_json::from_str(&price).unwrap();
-            println!("{json:?}")
-        })
-        .await;
+     let address = Cli::parse().address;
+
+    // This should get us the feeds we need to track
+    // after unpacking the info from the move object
+    // todo: unpack relevant data from second object's fields
+    // Obligation Cap Obj -> Obligation Obj
+    // SuilendAccount::get_suilend_accounts(address).await?;
+    // replace hard coded feeds
+
+    let handle = tokio::spawn(async move {
+        let client = PythClient::new();
+        let feed = vec![
+            ChainFeedId::Sui(SuiFeedId::Sui),
+            ChainFeedId::Sui(SuiFeedId::Deep),
+        ];
+        client
+            .stream_price_feeds(feed, |event| async move {
+                let json: PythSSE = serde_json::from_str(&event).unwrap();
+
+                json.parsed.iter().for_each(|e| {
+                    let chain = ChainFeedId::from_str(&e.id).unwrap();
+                    let price = e.price.price.parse::<u128>().unwrap();
+                    println!("{:?}{}", chain, price);
+                    LATEST_PRICES.insert(chain, price);
+                });
+            })
+            .await;
+
+        Ok::<(), Errors>(())
+    });
+
+    let _ = handle.await;
 
     Ok(())
 }

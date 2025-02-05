@@ -1,6 +1,6 @@
-use std::sync::mpsc::{Sender, Receiver, channel};
+use super::types::ChainFeedId;
+use dashmap::DashMap;
+use std::sync::LazyLock;
 
-pub struct Prices<T> {
-    tx: Sender<T>,
-    rx: Receiver<T>,
-}
+pub static LATEST_PRICES: LazyLock<DashMap<ChainFeedId, u128>> = LazyLock::new(|| DashMap::new());
+

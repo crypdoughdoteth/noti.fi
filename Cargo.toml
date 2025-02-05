@@ -14,3 +14,5 @@ sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
 move-core-types = { git = "https://github.com/mystenlabs/sui", package = "move-core-types"}
 thiserror = "2.0.3"
 tokio = { version = "1.41.0", features = ["rt-multi-thread", "macros"] }
+dashmap = "6.1.0"
+clap = {version = "4.5.28", features = ["derive"]}

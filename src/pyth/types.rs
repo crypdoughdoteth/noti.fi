@@ -13,7 +13,7 @@ impl PythClient {
     }
 
     pub async fn stream_price_feed<T: Future<Output = ()> + Send + Sync + 'static>(
-        &self,
+        self,
         feed: ChainFeedId,
         handler: impl Fn(String) -> T + Send + Clone + 'static + Copy,
     ) {
@@ -21,7 +21,7 @@ impl PythClient {
     }
 
     pub async fn stream_price_feeds<T: Future<Output = ()> + Send + Sync + 'static>(
-        &self,
+        self,
         feed: Vec<ChainFeedId>,
         handler: impl Fn(String) -> T + Send + Clone + Copy + 'static,
     ) {
@@ -40,7 +40,7 @@ impl MultiFeedStream {
     }
 
     pub async fn open_stream<T: Future<Output = ()> + Send + Sync + 'static>(
-        &self,
+        self,
         handler: impl Fn(String) -> T + Send + 'static + Clone + Copy,
     ) {
         let ids = &self.0;
@@ -50,7 +50,7 @@ impl MultiFeedStream {
 
         let mut url = format!("{}{}", Self::PRICE_FEED_STREAM_BASE_URL, ids[0].feed_id().0);
 
-        for id in ids.iter() {
+        for id in ids[1..].iter() {
             url.push_str(&format!("&ids[]={}", id.feed_id().0));
         }
 
@@ -90,7 +90,7 @@ impl PriceFeedStream {
     }
 
     pub async fn open_stream<T: Future<Output = ()> + Send + Sync + 'static>(
-        &self,
+        self,
         handler: impl Fn(String) -> T + Send + 'static + Clone + Copy,
     ) {
         let client = Client::builder().build().unwrap();
@@ -122,19 +122,55 @@ impl PriceFeedStream {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum ChainFeedId {
     Sui(SuiFeedId),
 }
 
 impl ChainFeedId {
-    const fn feed_id(&self) -> FeedId {
+    pub fn from_str(string: &str) -> Option<ChainFeedId> {
+        match string {
+            SuiFeedId::ARB_ID => Some(ChainFeedId::Sui(SuiFeedId::Arb)),
+            SuiFeedId::AVAX_ID => Some(ChainFeedId::Sui(SuiFeedId::Avax)),
+            SuiFeedId::BTC_ID => Some(ChainFeedId::Sui(SuiFeedId::Btc)),
+            SuiFeedId::CETUS_ID => Some(ChainFeedId::Sui(SuiFeedId::Cetus)),
+            SuiFeedId::DOGE_ID => Some(ChainFeedId::Sui(SuiFeedId::Doge)),
+            SuiFeedId::ETH_ID => Some(ChainFeedId::Sui(SuiFeedId::Eth)),
+            SuiFeedId::LTC_ID => Some(ChainFeedId::Sui(SuiFeedId::Ltc)),
+            SuiFeedId::OP_ID => Some(ChainFeedId::Sui(SuiFeedId::Op)),
+            SuiFeedId::PEPE_ID => Some(ChainFeedId::Sui(SuiFeedId::Pepe)),
+            SuiFeedId::SOL_ID => Some(ChainFeedId::Sui(SuiFeedId::Sol)),
+            SuiFeedId::SUI_ID => Some(ChainFeedId::Sui(SuiFeedId::Sui)),
+            SuiFeedId::USDC_ID => Some(ChainFeedId::Sui(SuiFeedId::Usdc)),
+            SuiFeedId::USDT_ID => Some(ChainFeedId::Sui(SuiFeedId::Usdt)),
+            SuiFeedId::WLD_ID => Some(ChainFeedId::Sui(SuiFeedId::Wld)),
+            SuiFeedId::TIA_ID => Some(ChainFeedId::Sui(SuiFeedId::Tia)),
+            SuiFeedId::APT_ID => Some(ChainFeedId::Sui(SuiFeedId::Apt)),
+            SuiFeedId::SEI_ID => Some(ChainFeedId::Sui(SuiFeedId::Sei)),
+            SuiFeedId::NAVX_ID => Some(ChainFeedId::Sui(SuiFeedId::Navx)),
+            SuiFeedId::SCA_ID => Some(ChainFeedId::Sui(SuiFeedId::Sca)),
+            SuiFeedId::AFSUI_ID => Some(ChainFeedId::Sui(SuiFeedId::Afsui)),
+            SuiFeedId::HASUI_ID => Some(ChainFeedId::Sui(SuiFeedId::Hasui)),
+            SuiFeedId::VSUI_ID => Some(ChainFeedId::Sui(SuiFeedId::Vsui)),
+            SuiFeedId::FDUSD_ID => Some(ChainFeedId::Sui(SuiFeedId::Fdusd)),
+            SuiFeedId::USDY_ID => Some(ChainFeedId::Sui(SuiFeedId::Usdy)),
+            SuiFeedId::AUSD_ID => Some(ChainFeedId::Sui(SuiFeedId::Ausd)),
+            SuiFeedId::POL_ID => Some(ChainFeedId::Sui(SuiFeedId::Pol)),
+            SuiFeedId::FUD_ID => Some(ChainFeedId::Sui(SuiFeedId::Fud)),
+            SuiFeedId::BUCK_ID => Some(ChainFeedId::Sui(SuiFeedId::Buck)),
+            SuiFeedId::DEEP_ID => Some(ChainFeedId::Sui(SuiFeedId::Deep)),
+            _ => None,
+        }
+    }
+
+    pub const fn feed_id(&self) -> FeedId {
         match self {
             ChainFeedId::Sui(sui_feed_id) => sui_feed_id.as_id(),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum SuiFeedId {
     Arb,
     Avax,
@@ -171,35 +207,35 @@ pub enum SuiFeedId {
 pub struct FeedId(&'static str);
 
 impl SuiFeedId {
-    const ARB_ID: &str = "3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5";
-    const AVAX_ID: &str = "93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7";
-    const BTC_ID: &str = "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43";
-    const CETUS_ID: &str = "e5b274b2611143df055d6e7cd8d93fe1961716bcd4dca1cad87a83bc1e78c1ef";
-    const DOGE_ID: &str = "dcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c";
-    const ETH_ID: &str = "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
-    const LTC_ID: &str = "6e3f3fa8253588df9326580180233eb791e03b443a3ba7a1d892e73874e19a54";
-    const OP_ID: &str = "385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf";
-    const PEPE_ID: &str = "d69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4";
-    const SOL_ID: &str = "ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
-    const SUI_ID: &str = "23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744";
-    const USDC_ID: &str = "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a";
-    const USDT_ID: &str = "2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b";
-    const WLD_ID: &str = "d6835ad1f773de4a378115eb6824bd0c0e42d84d1c84d9750e853fb6b6c7794a";
-    const TIA_ID: &str = "09f7c1d7dfbb7df2b8fe3d3d87ee94a2259d212da4f30c1f0540d066dfa44723";
-    const APT_ID: &str = "03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
-    const SEI_ID: &str = "53614f1cb0c031d4af66c04cb9c756234adad0e1cee85303795091499a4084eb";
-    const NAVX_ID: &str = "88250f854c019ef4f88a5c073d52a18bb1c6ac437033f5932cd017d24917ab46";
-    const SCA_ID: &str = "7e17f0ac105abe9214deb9944c30264f5986bf292869c6bd8e8da3ccd92d79bc";
-    const AFSUI_ID: &str = "17cd845b16e874485b2684f8b8d1517d744105dbb904eec30222717f4bc9ee0d";
-    const HASUI_ID: &str = "6120ffcf96395c70aa77e72dcb900bf9d40dccab228efca59a17b90ce423d5e8";
-    const VSUI_ID: &str = "57ff7100a282e4af0c91154679c5dae2e5dcacb93fd467ea9cb7e58afdcfde27";
-    const FDUSD_ID: &str = "ccdc1a08923e2e4f4b1e6ea89de6acbc5fe1948e9706f5604b8cb50bc1ed3979";
-    const USDY_ID: &str = "e393449f6aff8a4b6d3e1165a7c9ebec103685f3b41e60db4277b5b6d10e7326";
-    const AUSD_ID: &str = "d9912df360b5b7f21a122f15bdd5e27f62ce5e72bd316c291f7c86620e07fb2a";
-    const POL_ID: &str = "ffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472";
-    const FUD_ID: &str = "6a4090703da959247727f2b490eb21aea95c8684ecfac675f432008830890c75";
-    const BUCK_ID: &str = "fdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382";
-    const DEEP_ID: &str = "29bdd5248234e33bd93d3b81100b5fa32eaa5997843847e2c2cb16d7c6d9f7ff";
+    pub const ARB_ID: &str = "3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5";
+    pub const AVAX_ID: &str = "93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7";
+    pub const BTC_ID: &str = "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43";
+    pub const CETUS_ID: &str = "e5b274b2611143df055d6e7cd8d93fe1961716bcd4dca1cad87a83bc1e78c1ef";
+    pub const DOGE_ID: &str = "dcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c";
+    pub const ETH_ID: &str = "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
+    pub const LTC_ID: &str = "6e3f3fa8253588df9326580180233eb791e03b443a3ba7a1d892e73874e19a54";
+    pub const OP_ID: &str = "385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf";
+    pub const PEPE_ID: &str = "d69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4";
+    pub const SOL_ID: &str = "ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
+    pub const SUI_ID: &str = "23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744";
+    pub const USDC_ID: &str = "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a";
+    pub const USDT_ID: &str = "2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b";
+    pub const WLD_ID: &str = "d6835ad1f773de4a378115eb6824bd0c0e42d84d1c84d9750e853fb6b6c7794a";
+    pub const TIA_ID: &str = "09f7c1d7dfbb7df2b8fe3d3d87ee94a2259d212da4f30c1f0540d066dfa44723";
+    pub const APT_ID: &str = "03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
+    pub const SEI_ID: &str = "53614f1cb0c031d4af66c04cb9c756234adad0e1cee85303795091499a4084eb";
+    pub const NAVX_ID: &str = "88250f854c019ef4f88a5c073d52a18bb1c6ac437033f5932cd017d24917ab46";
+    pub const SCA_ID: &str = "7e17f0ac105abe9214deb9944c30264f5986bf292869c6bd8e8da3ccd92d79bc";
+    pub const AFSUI_ID: &str = "17cd845b16e874485b2684f8b8d1517d744105dbb904eec30222717f4bc9ee0d";
+    pub const HASUI_ID: &str = "6120ffcf96395c70aa77e72dcb900bf9d40dccab228efca59a17b90ce423d5e8";
+    pub const VSUI_ID: &str = "57ff7100a282e4af0c91154679c5dae2e5dcacb93fd467ea9cb7e58afdcfde27";
+    pub const FDUSD_ID: &str = "ccdc1a08923e2e4f4b1e6ea89de6acbc5fe1948e9706f5604b8cb50bc1ed3979";
+    pub const USDY_ID: &str = "e393449f6aff8a4b6d3e1165a7c9ebec103685f3b41e60db4277b5b6d10e7326";
+    pub const AUSD_ID: &str = "d9912df360b5b7f21a122f15bdd5e27f62ce5e72bd316c291f7c86620e07fb2a";
+    pub const POL_ID: &str = "ffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472";
+    pub const FUD_ID: &str = "6a4090703da959247727f2b490eb21aea95c8684ecfac675f432008830890c75";
+    pub const BUCK_ID: &str = "fdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382";
+    pub const DEEP_ID: &str = "29bdd5248234e33bd93d3b81100b5fa32eaa5997843847e2c2cb16d7c6d9f7ff";
 
     pub const fn as_id(&self) -> FeedId {
         match self {
