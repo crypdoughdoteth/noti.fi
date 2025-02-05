@@ -50,8 +50,10 @@ impl MultiFeedStream {
 
         let mut url = format!("{}{}", Self::PRICE_FEED_STREAM_BASE_URL, ids[0].feed_id().0);
 
-        for id in ids[1..].iter() {
-            url.push_str(&format!("&ids[]={}", id.feed_id().0));
+        if ids.len() > 1 {
+            for id in ids[1..].iter() {
+                url.push_str(&format!("&ids[]={}", id.feed_id().0));
+            }
         }
 
         let client = Client::builder().build().unwrap();
