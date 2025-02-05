@@ -2,8 +2,10 @@ use async_sse::{decode, Event};
 use futures::prelude::*;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::marker::{Send, Sync};
+use std::{marker::{Send, Sync}, str::FromStr};
 use stream::StreamExt;
+
+use crate::errors::Errors;
 
 pub struct PythClient;
 
@@ -238,6 +240,42 @@ impl SuiFeedId {
     pub const FUD_ID: &str = "6a4090703da959247727f2b490eb21aea95c8684ecfac675f432008830890c75";
     pub const BUCK_ID: &str = "fdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382";
     pub const DEEP_ID: &str = "29bdd5248234e33bd93d3b81100b5fa32eaa5997843847e2c2cb16d7c6d9f7ff";
+
+    pub fn from_name(s: &str) -> Result<Self, Errors> {
+        match s {
+            "arb" => Ok(SuiFeedId::Arb),
+            "avax" => Ok(SuiFeedId::Avax),
+            "btc" => Ok(SuiFeedId::Btc),
+            "cetus" => Ok(SuiFeedId::Cetus),
+            "doge" => Ok(SuiFeedId::Doge),
+            "eth" => Ok(SuiFeedId::Eth),
+            "ltc" => Ok(SuiFeedId::Ltc),
+            "op" => Ok(SuiFeedId::Op),
+            "pepe" => Ok(SuiFeedId::Pepe),
+            "sol" => Ok(SuiFeedId::Sol),
+            "sui" => Ok(SuiFeedId::Sui),
+            "usdc" => Ok(SuiFeedId::Usdc),
+            "usdt" => Ok(SuiFeedId::Usdc),
+            "wld" => Ok(SuiFeedId::Wld),
+            "tia" => Ok(SuiFeedId::Tia),
+            "apt" => Ok(SuiFeedId::Apt),
+            "sei" => Ok(SuiFeedId::Sei),
+            "navx" => Ok(SuiFeedId::Navx),
+            "sca" => Ok(SuiFeedId::Sca),
+            "afsui" => Ok(SuiFeedId::Afsui),
+            "hasui" => Ok(SuiFeedId::Hasui),
+            "vsui" => Ok(SuiFeedId::Vsui),
+            "fdusd" => Ok(SuiFeedId::Fdusd),
+            "usdy" => Ok(SuiFeedId::Usdy),
+            "ausd" => Ok(SuiFeedId::Ausd),
+            "pol" => Ok(SuiFeedId::Pol),
+            "fud" => Ok(SuiFeedId::Fud),
+            "buck" => Ok(SuiFeedId::Buck),
+            "deep" => Ok(SuiFeedId::Deep),
+            _ => Err(Errors::SuiFeedIdParsingError),
+        }
+    }
+
 
     pub const fn as_id(&self) -> FeedId {
         match self {

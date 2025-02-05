@@ -5,6 +5,7 @@ use pyth::{
     types::{ChainFeedId, PythClient, PythSSE, SuiFeedId},
 };
 use sui_sdk::types::base_types::SuiAddress;
+use suilend::objects::{Obligation, SuilendAccount};
 // use suilend::{
 //     objects::SuilendAccount,
 //     types::{Asset, Deposit, Loan, Position},
@@ -22,23 +23,53 @@ pub struct Cli {
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-     let address = Cli::parse().address;
+    let address = Cli::parse().address;
 
     // This should get us the feeds we need to track
     // after unpacking the info from the move object
     // todo: unpack relevant data from second object's fields
     // Obligation Cap Obj -> Obligation Obj
-    // SuilendAccount::get_suilend_accounts(address).await?;
-    // replace hard coded feeds
+    let obligations = SuilendAccount::get_suilend_accounts(address).await?;
+    let feeds = obligations.iter().fold(Vec::new(), |mut acc, e| {
+        let ids = e
+            .borrows
+            .iter()
+            .zip(e.deposits.iter())
+            .map(|(borrow, deposit)| {
+                let borrow_name = borrow
+                    .coin_type
+                    .name
+                    .split("::")
+                    .last()
+                    .unwrap()
+                    .to_lowercase();
+                println!("{}", &borrow_name);
 
+                let deposit_name = deposit
+                    .coin_type
+                    .name
+                    .split("::")
+                    .last()
+                    .unwrap()
+                    .to_lowercase();
+                println!("{}", deposit_name);
+
+                let id1 = ChainFeedId::Sui(SuiFeedId::from_name(&borrow_name).unwrap());
+                let id2 = ChainFeedId::Sui(SuiFeedId::from_name(&deposit_name).unwrap());
+                vec![id1, id2]
+            })
+            .flatten()
+            .collect::<Vec<ChainFeedId>>();
+
+        acc.extend_from_slice(&ids);
+        acc
+    });
+
+    // replace hard coded feeds
     let handle = tokio::spawn(async move {
         let client = PythClient::new();
-        let feed = vec![
-            ChainFeedId::Sui(SuiFeedId::Sui),
-            ChainFeedId::Sui(SuiFeedId::Deep),
-        ];
         client
-            .stream_price_feeds(feed, |event| async move {
+            .stream_price_feeds(feeds, |event| async move {
                 let json: PythSSE = serde_json::from_str(&event).unwrap();
 
                 json.parsed.iter().for_each(|e| {

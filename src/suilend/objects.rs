@@ -19,10 +19,81 @@ pub struct SuilendAccountFields {
     obligation_id: SuiAddress,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Obligation {
+    pub allowed_borrow_value_usd: BorrowValue,
+    pub bad_debt_usd: BadDebt,
+    pub borrowing_isolated_asset: bool,
+    pub borrows: Vec<Borrow>,
+    pub closable: bool,
+    pub deposited_value_usd: DepositedValue,
+    pub deposits: Vec<Deposit>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Deposit {
+    pub attributed_borrow_value: AttributedBorrowValue,
+    pub coin_type: CoinType,
+    pub deposited_ctoken_amount: String,
+    pub market_value: MarketValue,
+    pub reserve_array_index: String,
+    pub user_reward_manager_index: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AttributedBorrowValue {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DepositedValue {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Borrow {
+    pub borrowed_amount: BorrowedAmount,
+    pub coin_type: CoinType,
+    pub cumulative_borrow_rate: CumulativeBorrowRate,
+    pub market_value: MarketValue,
+    pub reserve_array_index: String,
+    pub user_reward_manager_index: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MarketValue {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CumulativeBorrowRate {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CoinType {
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BorrowedAmount {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BorrowValue {
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BadDebt {
+    pub value: String,
+}
+
 pub struct SuilendAccount;
 
 impl SuilendAccount {
-    pub async fn get_suilend_accounts(address: SuiAddress) -> Result<(), Errors> {
+    pub async fn get_suilend_accounts(address: SuiAddress) -> Result<Vec<Obligation>, Errors> {
         let client = SuiClientBuilder::default()
             .build("https://fullnode.mainnet.sui.io:443")
             .await?;
@@ -47,6 +118,8 @@ impl SuilendAccount {
             .get_owned_objects(address, Some(query), None, None)
             .await?
             .data;
+
+        let mut obligations: Vec<Obligation> = Vec::new();
 
         for e in suilend_account.into_iter() {
             let data = e
@@ -77,11 +150,19 @@ impl SuilendAccount {
                     )
                     .await?;
 
-                let sample = obligation.data.unwrap().content.unwrap().try_into_move().unwrap();
-                println!("{sample:#?}");
+                let sample = obligation
+                    .data
+                    .unwrap()
+                    .content
+                    .unwrap()
+                    .try_into_move()
+                    .unwrap();
+                let json = sample.fields.to_json_value();
+                let obligation = serde_json::from_value::<Obligation>(json).unwrap();
+                obligations.push(obligation);
             }
         }
-
-        Ok(())
+        println!("{:?}", &obligations);
+        Ok(obligations)
     }
 }
